@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Tic-Tac-Toe AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        body.dark {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        button:hover, select:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 30px auto;
+            max-width: 300px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .cell:hover:not(.taken) {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .cell.taken {
+            cursor: not-allowed;
+        }
+
+        .cell.x {
+            color: #ff6b6b;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .cell.o {
+            color: #4ecdc4;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-info {
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+
+        .game-status {
+            font-weight: bold;
+            margin-bottom: 10px;
+            min-height: 30px; /* Ensures layout doesn't jump */
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 10px;
+            border-radius: 25px;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .difficulty-info {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 10px;
+            min-height: 20px; /* Ensures layout doesn't jump */
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .winning-cell {
+            animation: pulse 0.6s ease-in-out;
+            background: rgba(255, 215, 0, 0.3); /* Golden highlight */
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .cell {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Smart Tic-Tac-Toe</h1>
+        
+        <div class="game-controls">
+            <div class="control-group">
+                <label>Difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard" selected>Hard</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>You play as:</label>
+                <select id="playerSymbol">
+                    <option value="X">X (First)</option>
+                    <option value="O">O (Second)</option>
+                </select>
+            </div>
+            <button id="themeToggle">🌙 Dark Mode</button>
+        </div>
+
+        <div class="difficulty-info" id="difficultyInfo">
+            Hard Mode: AI uses Minimax with Alpha-Beta pruning (Unbeatable!)
+        </div>
+
+        <div class="game-info">
+            <div class="game-status" id="gameStatus">Your turn! Click a cell to play.</div>
+        </div>
+
+        <div class="game-board" id="gameBoard">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="winsCount">0</div>
+                <div class="stat-label">Your Wins</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="drawsCount">0</div>
+                <div class="stat-label">Draws</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="lossesCount">0</div>
+                <div class="stat-label">AI Wins</div>
+            </div>
+        </div>
+
+        <button class="reset-btn" id="resetBtn">🔄 New Game</button>
+        <button class="reset-btn" id="clearStatsBtn">📊 Clear Stats</button>
+    </div>
+
+    <script>
+        class TicTacToeAI {
+            constructor() {
+                // 1. Initialize default game state and stats object
+                this.board = Array(9).fill('');
+                this.humanPlayer = 'X'; // Default, will be updated by loadStats if applicable
+                this.aiPlayer = 'O';   // Default
+                this.currentPlayer = 'X'; // Game always starts with 'X'
+                this.gameActive = true;
+                this.difficulty = 'hard'; // Default
+
+                // Statistics (stored in memory)
+                this.stats = {
+                    wins: 0,
+                    draws: 0,
+                    losses: 0,
+                    playerSymbol: 'X', // Default for stats storage
+                    difficulty: 'hard',  // Default for stats storage
+                    darkMode: false
+                };
+
+                // 2. Cache DOM elements (needed by subsequent steps)
+                this.gameBoard = document.getElementById('gameBoard');
+                this.gameStatus = document.getElementById('gameStatus');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.clearStatsBtn = document.getElementById('clearStatsBtn');
+                this.difficultySelect = document.getElementById('difficulty');
+                this.playerSymbolSelect = document.getElementById('playerSymbol');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.difficultyInfo = document.getElementById('difficultyInfo');
+                this.winsCountEl = document.getElementById('winsCount');
+                this.drawsCountEl = document.getElementById('drawsCount');
+                this.lossesCountEl = document.getElementById('lossesCount');
+
+
+                // 3. Load stats from storage (updates this.difficulty, this.humanPlayer, theme state)
+                this.loadStats(); 
+
+                // 4. Setup event listeners for UI controls
+                this.setupEventListeners();
+
+                // 5. Update the display to reflect the current state (either defaults or loaded from stats)
+                this.updateDisplay();
+
+                // 6. Perform initial game reset and start (AI moves if it's 'X' and current player)
+                this.resetGame();
+            }
+
+            setupEventListeners() {
+                this.gameBoard.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('cell')) {
+                        this.handleCellClick(parseInt(e.target.dataset.index));
+                    }
+                });
+
+                this.resetBtn.addEventListener('click', () => this.resetGame());
+                this.clearStatsBtn.addEventListener('click', () => this.clearStats());
+                
+                this.difficultySelect.addEventListener('change', (e) => {
+                    this.difficulty = e.target.value;
+                    this.stats.difficulty = this.difficulty;
+                    this.saveStats();
+                    this.updateDifficultyInfo();
+                    // Optional: could call resetGame() if difficulty change should immediately restart
+                });
+
+                this.playerSymbolSelect.addEventListener('change', (e) => {
+                    this.humanPlayer = e.target.value;
+                    this.aiPlayer = this.humanPlayer === 'X' ? 'O' : 'X';
+                    this.stats.playerSymbol = this.humanPlayer;
+                    this.saveStats();
+                    this.resetGame(); // Reset game when player symbol changes
+                });
+
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+            }
+
+            handleCellClick(index) {
+                if (!this.gameActive || this.board[index] !== '' || this.currentPlayer !== this.humanPlayer) {
+                    return;
+                }
+
+                this.makeMove(index, this.humanPlayer);
+                
+                if (this.gameActive && this.currentPlayer === this.aiPlayer) {
+                    setTimeout(() => {
+                        this.makeAIMove();
+                    }, 300);
+                }
+            }
+
+            makeMove(index, player) {
+                this.board[index] = player;
+                this.updateCellDisplay(index, player);
+                
+                const gameEndResult = this.checkGameEnd();
+                if (gameEndResult) {
+                    this.endGame(gameEndResult);
+                } else {
+                    this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+                    this.updateStatus();
+                }
+            }
+
+            makeAIMove() {
+                if (!this.gameActive) return;
+
+                let bestMove;
+                switch (this.difficulty) {
+                    case 'easy':
+                        bestMove = this.getRandomMove();
+                        break;
+                    case 'medium':
+                        bestMove = this.getMinimaxMove(3); // Limited depth
+                        break;
+                    case 'hard':
+                    default:
+                        bestMove = this.getMinimaxMove(); // Full search
+                        break;
+                }
+
+                if (bestMove !== -1) {
+                    this.makeMove(bestMove, this.aiPlayer);
+                }
+            }
+
+            minimax(board, depth, isMaximizing, alpha = -Infinity, beta = Infinity, maxDepth = Infinity) {
+                const score = this.evaluateBoard(board);
+                
+                if (score !== null || depth >= maxDepth) { // score is not null if terminal state
+                    if (score === 10) return score - depth; // AI wins, prefer quicker wins
+                    if (score === -10) return score + depth; // Human wins, prefer later losses for AI
+                    if (score === 0) return 0; // Draw
+                    return 0; // Should be covered by score !== null, but as fallback for depth limit
+                }
+
+                if (isMaximizing) { // AI's turn (Maximizer)
+                    let maxEval = -Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (board[i] === '') {
+                            board[i] = this.aiPlayer;
+                            const evalScore = this.minimax(board, depth + 1, false, alpha, beta, maxDepth);
+                            board[i] = '';
+                            maxEval = Math.max(maxEval, evalScore);
+                            alpha = Math.max(alpha, evalScore);
+                            if (beta <= alpha) break;
+                        }
+                    }
+                    return maxEval;
+                } else { // Human's turn (Minimizer)
+                    let minEval = Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (board[i] === '') {
+                            board[i] = this.humanPlayer;
+                            const evalScore = this.minimax(board, depth + 1, true, alpha, beta, maxDepth);
+                            board[i] = '';
+                            minEval = Math.min(minEval, evalScore);
+                            beta = Math.min(beta, evalScore);
+                            if (beta <= alpha) break;
+                        }
+                    }
+                    return minEval;
+                }
+            }
+
+            getMinimaxMove(maxDepth = Infinity) {
+                let bestMove = -1;
+                let bestValue = -Infinity;
+                
+                for (let i = 0; i < 9; i++) {
+                    if (this.board[i] === '') {
+                        this.board[i] = this.aiPlayer;
+                        // Evaluate this move from the perspective of the human player (minimizer)
+                        const moveValue = this.minimax([...this.board], 0, false, -Infinity, Infinity, maxDepth);
+                        this.board[i] = '';
+                        
+                        if (moveValue > bestValue) {
+                            bestMove = i;
+                            bestValue = moveValue;
+                        }
+                    }
+                }
+                return bestMove;
+            }
+
+            getRandomMove() {
+                const availableMoves = [];
+                for (let i = 0; i < 9; i++) {
+                    if (this.board[i] === '') availableMoves.push(i);
+                }
+                return availableMoves.length > 0 ? 
+                    availableMoves[Math.floor(Math.random() * availableMoves.length)] : -1;
+            }
+
+            evaluateBoard(board) {
+                const winner = this.checkWinner(board);
+                if (winner === this.aiPlayer) return 10;
+                if (winner === this.humanPlayer) return -10;
+                if (this.isBoardFull(board)) return 0;
+                return null; // Game ongoing
+            }
+
+            checkWinner(board) {
+                const winPatterns = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+                for (const pattern of winPatterns) {
+                    const [a, b, c] = pattern;
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        return board[a]; // Returns 'X' or 'O'
+                    }
+                }
+                return null;
+            }
+
+            isBoardFull(board) {
+                return board.every(cell => cell !== '');
+            }
+
+            checkGameEnd() {
+                const winner = this.checkWinner(this.board);
+                if (winner) {
+                    return { type: 'win', winner: winner };
+                }
+                if (this.isBoardFull(this.board)) {
+                    return { type: 'draw' };
+                }
+                return null;
+            }
+
+            endGame(result) {
+                this.gameActive = false;
+                
+                if (result.type === 'win') {
+                    if (result.winner === this.humanPlayer) {
+                        this.gameStatus.textContent = '🎉 You Win!';
+                        this.stats.wins++;
+                    } else {
+                        this.gameStatus.textContent = '🤖 AI Wins!';
+                        this.stats.losses++;
+                    }
+                    this.highlightWinningCells(); // Highlight the winning line
+                } else { // Draw
+                    this.gameStatus.textContent = '🤝 It\'s a Draw!';
+                    this.stats.draws++;
+                }
+                
+                this.saveStats();
+                this.updateStatsDisplay();
+            }
+
+            highlightWinningCells() {
+                const winPatterns = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+                for (const pattern of winPatterns) {
+                    const [a, b, c] = pattern;
+                    if (this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c]) {
+                        pattern.forEach(index => {
+                            const cell = this.gameBoard.querySelector(`[data-index="${index}"]`);
+                            if (cell) cell.classList.add('winning-cell');
+                        });
+                        break; 
+                    }
+                }
+            }
+
+            resetGame() {
+                this.board = Array(9).fill('');
+                this.currentPlayer = 'X'; // 'X' always starts
+                this.gameActive = true;
+                
+                const cells = this.gameBoard.querySelectorAll('.cell');
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.classList.remove('taken', 'x', 'o', 'winning-cell');
+                });
+                
+                this.updateStatus();
+                
+                // If AI is 'X' (i.e., human is 'O'), AI makes the first move.
+                if (this.currentPlayer === this.aiPlayer) {
+                    setTimeout(() => {
+                        this.makeAIMove();
+                    }, 500); // Small delay for UX
+                }
+            }
+
+            updateCellDisplay(index, player) {
+                const cell = this.gameBoard.querySelector(`[data-index="${index}"]`);
+                if (cell) {
+                    cell.textContent = player;
+                    cell.classList.add('taken', player.toLowerCase());
+                }
+            }
+
+            updateStatus() {
+                if (!this.gameActive) return; // Don't update if game ended
+
+                if (this.currentPlayer === this.humanPlayer) {
+                    this.gameStatus.textContent = 'Your turn! Click a cell to play.';
+                } else {
+                    this.gameStatus.textContent = '🤖 AI is thinking...';
+                }
+            }
+
+            updateDisplay() {
+                this.updateStatsDisplay();
+                this.updateDifficultyInfo();
+                // Set dropdown values from current game state
+                if (this.difficultySelect) this.difficultySelect.value = this.difficulty;
+                if (this.playerSymbolSelect) this.playerSymbolSelect.value = this.humanPlayer;
+            }
+
+            updateStatsDisplay() {
+                if (this.winsCountEl) this.winsCountEl.textContent = this.stats.wins;
+                if (this.drawsCountEl) this.drawsCountEl.textContent = this.stats.draws;
+                if (this.lossesCountEl) this.lossesCountEl.textContent = this.stats.losses;
+            }
+
+            updateDifficultyInfo() {
+                const info = {
+                    easy: 'Easy Mode: AI makes random moves.',
+                    medium: 'Medium Mode: AI uses limited Minimax search.',
+                    hard: 'Hard Mode: AI uses Minimax with Alpha-Beta pruning (Unbeatable!)'
+                };
+                if (this.difficultyInfo) this.difficultyInfo.textContent = info[this.difficulty];
+            }
+
+            toggleTheme() {
+                document.body.classList.toggle('dark');
+                this.stats.darkMode = document.body.classList.contains('dark');
+                if (this.themeToggle) {
+                    this.themeToggle.textContent = this.stats.darkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+                }
+                this.saveStats();
+            }
+
+            clearStats() {
+                this.stats.wins = 0;
+                this.stats.draws = 0;
+                this.stats.losses = 0;
+                this.saveStats();
+                this.updateStatsDisplay();
+            }
+
+            saveStats() {
+                // In a real environment, this would use localStorage:
+                // localStorage.setItem('ticTacToeStatsV2', JSON.stringify(this.stats));
+                console.log('Stats saved (in memory):', JSON.parse(JSON.stringify(this.stats)));
+            }
+
+            loadStats() {
+                // In a real environment, this would load from localStorage:
+                // const saved = localStorage.getItem('ticTacToeStatsV2');
+                // if (saved) { this.stats = { ...this.stats, ...JSON.parse(saved) }; }
+                
+                // Apply loaded/default settings from this.stats to game properties
+                this.difficulty = this.stats.difficulty;
+                this.humanPlayer = this.stats.playerSymbol;
+                this.aiPlayer = this.humanPlayer === 'X' ? 'O' : 'X';
+                
+                // Apply theme based on stats
+                if (this.stats.darkMode) {
+                    document.body.classList.add('dark');
+                    if (this.themeToggle) this.themeToggle.textContent = '☀️ Light Mode';
+                } else {
+                    document.body.classList.remove('dark');
+                    if (this.themeToggle) this.themeToggle.textContent = '🌙 Dark Mode';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new TicTacToeAI();
+        });
+    </script>
+</body>
+</html>
